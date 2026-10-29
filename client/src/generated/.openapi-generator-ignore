@@ -1,0 +1,4 @@
+# openapi-generator が出力しないファイル。ライブラリのソース（apis / models / infrastructure）だけを生成する
+README.md
+build.gradle
+settings.gradle

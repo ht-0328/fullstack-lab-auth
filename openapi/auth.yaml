@@ -1,0 +1,132 @@
+openapi: 3.0.3
+info:
+  title: fullstack-lab 認証 API
+  version: 1.0.0
+  description: |
+    一般利用者（マイページ）のアカウント管理。Keycloak（realm: customer）の Admin API の前段として、
+    登録・参照・パスワード変更を提供する。内部ネットワーク専用で、BFF から呼ばれる。
+    ログイン（トークンの発行）は担当しない。ログインは前段（ALB / oauth2-proxy）が Keycloak のログイン画面へ誘導する。
+    この仕様から、コントローラーのインターフェースと DTO（このリポジトリ）と、クライアント auth-client（BFF 向け）を生成する。
+servers:
+  - url: http://auth:8080
+    description: コンテナ間（Compose のサービス名）
+tags:
+  - name: customers
+    description: 一般利用者のアカウント
+paths:
+  /auth/v1/customers:
+    post:
+      tags: [customers]
+      operationId: registerCustomer
+      summary: 会員登録（Keycloak にユーザーを作り、ロール customer を付与する）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RegisterCustomerRequest' }
+      responses:
+        '201':
+          description: 登録済み。id は Keycloak のユーザー ID（ログイン後の JWT の sub と同じ）
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CustomerAccount' }
+        '400':
+          $ref: '#/components/responses/Problem'
+        '409':
+          description: メールアドレスが登録済み
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/ProblemDetail' }
+        '503':
+          description: Keycloak に到達できない
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/ProblemDetail' }
+  /auth/v1/customers/{id}:
+    get:
+      tags: [customers]
+      operationId: getCustomer
+      summary: アカウントの参照
+      parameters:
+        - $ref: '#/components/parameters/CustomerId'
+      responses:
+        '200':
+          description: アカウント
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CustomerAccount' }
+        '404':
+          $ref: '#/components/responses/Problem'
+  /auth/v1/customers/{id}/password:
+    put:
+      tags: [customers]
+      operationId: changeCustomerPassword
+      summary: パスワード変更（現在のパスワードを Keycloak で確かめてから変える）
+      parameters:
+        - $ref: '#/components/parameters/CustomerId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ChangePasswordRequest' }
+      responses:
+        '204':
+          description: 変更済み
+        '400':
+          $ref: '#/components/responses/Problem'
+        '403':
+          description: 現在のパスワードが違う
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/ProblemDetail' }
+        '404':
+          $ref: '#/components/responses/Problem'
+components:
+  parameters:
+    CustomerId:
+      name: id
+      in: path
+      required: true
+      description: Keycloak のユーザー ID（JWT の sub）
+      schema: { type: string }
+  responses:
+    Problem:
+      description: エラー（RFC 9457）
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ProblemDetail' }
+  schemas:
+    RegisterCustomerRequest:
+      type: object
+      required: [email, familyName, givenName, password]
+      properties:
+        email:
+          type: string
+          maxLength: 254
+          pattern: '^[^@ ]+@[^@ ]+[.][^@ ]+$'
+          description: ログイン ID を兼ねる
+        familyName: { type: string, minLength: 1, maxLength: 50 }
+        givenName: { type: string, minLength: 1, maxLength: 50 }
+        password: { type: string, format: password, minLength: 8, maxLength: 128 }
+    ChangePasswordRequest:
+      type: object
+      required: [currentPassword, newPassword]
+      properties:
+        currentPassword: { type: string, format: password, minLength: 1, maxLength: 128 }
+        newPassword: { type: string, format: password, minLength: 8, maxLength: 128 }
+    CustomerAccount:
+      type: object
+      required: [id, email, familyName, givenName]
+      properties:
+        id: { type: string, description: Keycloak のユーザー ID（JWT の sub） }
+        email: { type: string }
+        familyName: { type: string }
+        givenName: { type: string }
+    ProblemDetail:
+      type: object
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }

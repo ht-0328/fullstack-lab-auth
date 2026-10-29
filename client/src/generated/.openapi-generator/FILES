@@ -1,0 +1,11 @@
+kotlin/com/example/fullstacklab/authclient/apis/CustomersApi.kt
+kotlin/com/example/fullstacklab/authclient/infrastructure/ApiAbstractions.kt
+kotlin/com/example/fullstacklab/authclient/infrastructure/ApiClient.kt
+kotlin/com/example/fullstacklab/authclient/infrastructure/PartConfig.kt
+kotlin/com/example/fullstacklab/authclient/infrastructure/RequestConfig.kt
+kotlin/com/example/fullstacklab/authclient/infrastructure/RequestMethod.kt
+kotlin/com/example/fullstacklab/authclient/infrastructure/Serializer.kt
+kotlin/com/example/fullstacklab/authclient/models/ChangePasswordRequest.kt
+kotlin/com/example/fullstacklab/authclient/models/CustomerAccount.kt
+kotlin/com/example/fullstacklab/authclient/models/ProblemDetail.kt
+kotlin/com/example/fullstacklab/authclient/models/RegisterCustomerRequest.kt

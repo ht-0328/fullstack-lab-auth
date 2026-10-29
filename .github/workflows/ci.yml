@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: 単体テスト（Dockerfile の test ステージ）
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v4
+      - name: 生成コードが仕様と一致することを確かめてテスト
+        run: docker build --target test .
+
+  karate:
+    name: API テスト（Karate、compose.test.yaml）
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v4
+      - name: このサービスと依存先だけを起動して、契約どおりに振る舞うことを確認
+        run: |
+          docker compose -f compose.test.yaml build
+          docker compose -f compose.test.yaml run --rm karate
+      - name: ログ（失敗時）
+        if: failure()
+        run: docker compose -f compose.test.yaml logs --no-color --tail=100
+      - name: 停止
+        if: always()
+        run: docker compose -f compose.test.yaml down -v
+
+  publish-client:
+    name: クライアントを GitHub Packages へ publish
+    # main に取り込まれたときだけ。PR の段階では publish しない
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [test, karate]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      MAVEN_REPO_PUBLISH_URL: https://maven.pkg.github.com/${{ github.repository }}
+      MAVEN_REPO_USER: ${{ github.actor }}
+      MAVEN_REPO_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@v6
+      - name: 同じバージョンが publish 済みなら何もしない（成果物は上書きしない）
+        id: exists
+        run: |
+          version=$(sed -nE 's/^version=(.+)$/\1/p' gradle.properties)
+          url="$MAVEN_REPO_PUBLISH_URL/com/example/fullstacklab/auth-client/$version/auth-client-$version.pom"
+          if curl -fsS -o /dev/null -u "$MAVEN_REPO_USER:$MAVEN_REPO_PASSWORD" "$url"; then
+            echo "auth-client:$version は publish 済み"
+            echo "published=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "published=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: 生成して publish
+        if: steps.exists.outputs.published == 'false'
+        run: ./gradlew :client:publish --no-daemon

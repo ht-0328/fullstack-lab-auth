@@ -1,0 +1,13 @@
+# Gradle / Kotlin（OpenAPI から生成したコードは src/generated にあり、git で管理する）
+.gradle/
+build/
+.kotlin/
+
+# Karate の実行結果
+karate/target/
+
+# IDE / OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
