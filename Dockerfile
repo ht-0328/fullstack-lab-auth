@@ -5,14 +5,16 @@ COPY gradlew settings.gradle.kts build.gradle.kts gradle.properties ./
 COPY gradle gradle
 COPY client/build.gradle.kts client/
 COPY openapi openapi
+# Gradle のキャッシュはリポジトリごとに id で分け、sharing=locked で 1 つずつ使う。
+# Compose が複数のイメージを並列でビルドすると、共有のキャッシュのロックを取り合ってタイムアウトするため
 # 依存解決を先に行い、ソース変更時もこのレイヤーをキャッシュさせる
-RUN --mount=type=cache,target=/root/.gradle ./gradlew dependencies --no-daemon -q > /dev/null
+RUN --mount=type=cache,id=gradle-auth,sharing=locked,target=/root/.gradle ./gradlew dependencies --no-daemon -q > /dev/null
 COPY src src
 COPY client/src client/src
 
 # 生成コードが仕様と一致していることを確かめる。仕様だけ直して生成し忘れた変更や、生成コードを手で直した変更をここで落とす
 FROM build AS check-generated
-RUN --mount=type=cache,target=/root/.gradle \
+RUN --mount=type=cache,id=gradle-auth,sharing=locked,target=/root/.gradle \
     cp -r src/generated /tmp/server && cp -r client/src/generated /tmp/client \
     && ./gradlew generate --no-daemon \
     && diff -r /tmp/server src/generated && diff -r /tmp/client client/src/generated \
@@ -20,10 +22,10 @@ RUN --mount=type=cache,target=/root/.gradle \
 
 # docker build --target test で単体テストを実行する（ホスト側に JDK は不要）
 FROM check-generated AS test
-RUN --mount=type=cache,target=/root/.gradle ./gradlew test --no-daemon
+RUN --mount=type=cache,id=gradle-auth,sharing=locked,target=/root/.gradle ./gradlew test --no-daemon
 
 FROM build AS package
-RUN --mount=type=cache,target=/root/.gradle ./gradlew bootJar --no-daemon -x test
+RUN --mount=type=cache,id=gradle-auth,sharing=locked,target=/root/.gradle ./gradlew bootJar --no-daemon -x test
 
 FROM eclipse-temurin:21-jre-noble AS runtime
 RUN useradd --system --uid 10001 app
