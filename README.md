@@ -1,6 +1,6 @@
 # fullstack-lab-auth
 
-認証 API（Kotlin + Spring Boot）と、一般利用者向け IdP である Keycloak の realm `customer` の定義。[fullstack-lab](https://github.com/ht-0328/fullstack-lab) の一部で、BFF からアカウントの登録・参照・パスワード変更を依頼される内部サービスです。ログイン（トークンの発行）は担当せず、前段（ローカル: oauth2-proxy、AWS: ALB）が Keycloak のログイン画面へ誘導します。設計は fullstack-lab の `docs/design/0005-auth-api-and-signup.md` にあります。
+認証 API（Kotlin + Spring Boot）と、一般利用者向け IdP である Keycloak の realm `customer` の定義。[fullstack-lab](https://github.com/ht-0328/fullstack-lab) の一部で、BFF からアカウントの登録・参照・パスワード変更を依頼される内部サービスです。ログイン（トークンの発行）は担当せず、前段（ローカル: oauth2-proxy、AWS: ALB）が Keycloak のログイン画面へ誘導します。設計は fullstack-lab の `docs/design/auth/`（全体像は `docs/design/auth/README.md`）にあります。
 
 ```
 auth/
