@@ -68,7 +68,7 @@ class KeycloakAdminClient(private val client: RestClient, private val props: Key
             "firstName" to givenName,
             "lastName" to familyName,
             "enabled" to true,
-            // 確認メールの仕組みは持たないため、登録時点で確認済みにする（設計書 0005 の仮定）
+            // 確認メールの仕組みは持たないため、登録時点で確認済みにする（fullstack-lab の docs/design/auth/customer-signup.md）
             "emailVerified" to true,
             "credentials" to listOf(passwordCredential(password)),
         )

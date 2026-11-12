@@ -14,7 +14,7 @@ auth:
     # コンテナ間の URL（ブラウザから見た URL とは異なる）。トークンは最初の呼び出し時に取得する
     base-url: ${KEYCLOAK_BASE_URL}
     realm: ${KEYCLOAK_REALM:customer}
-    # サービスアカウント付きの機密クライアント（realm-management の manage-users / view-users）
+    # サービスアカウント付きの機密クライアント（realm-management の manage-users / view-users / view-realm）
     client-id: ${AUTH_API_CLIENT_ID:auth-api}
     client-secret: ${AUTH_API_CLIENT_SECRET}
     # 登録したユーザーに付与する realm ロール
